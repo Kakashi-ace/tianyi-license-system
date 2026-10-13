@@ -36,12 +36,12 @@ export default function Login({ onLoginSuccess, onNavigateHome }) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col justify-center items-center px-4 relative overflow-hidden font-sans">
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-xl shadow-slate-200/50 relative z-10 space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 border border-emerald-500 mx-auto flex items-center justify-center font-black text-2xl text-white shadow-md shadow-emerald-500/20">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-800 border border-blue-500 mx-auto flex items-center justify-center font-black text-2xl text-white shadow-md shadow-blue-500/20">
             弈
           </div>
           <h2 className="text-2xl font-black text-slate-900">天弈 AI 卡密管理后台</h2>
@@ -65,7 +65,7 @@ export default function Login({ onLoginSuccess, onNavigateHome }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="请输入管理账号"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 transition"
               />
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function Login({ onLoginSuccess, onNavigateHome }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="请输入登录密码"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 transition"
               />
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function Login({ onLoginSuccess, onNavigateHome }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/20 flex items-center justify-center space-x-2 transition disabled:opacity-50"
           >
             <span>{loading ? '正在验证身份...' : '立即登录管理系统'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -97,7 +97,7 @@ export default function Login({ onLoginSuccess, onNavigateHome }) {
         <div className="pt-2 text-center">
           <button
             onClick={onNavigateHome}
-            className="text-xs text-slate-500 hover:text-emerald-600 transition"
+            className="text-xs text-slate-500 hover:text-blue-600 transition"
           >
             ← 返回卡密购买首页
           </button>

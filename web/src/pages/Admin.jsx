@@ -185,7 +185,7 @@ export default function Admin({ onLogout }) {
       <header className="border-b border-slate-200 bg-white sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 border border-emerald-500 flex items-center justify-center font-black text-lg text-white shadow-md shadow-emerald-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-800 border border-blue-500 flex items-center justify-center font-black text-lg text-white shadow-md shadow-blue-500/20">
               弈
             </div>
             <div>
@@ -194,7 +194,7 @@ export default function Admin({ onLogout }) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-xs text-slate-500">管理员: <strong className="text-emerald-700">admin</strong></span>
+            <span className="text-xs text-slate-500">管理员: <strong className="text-blue-700">admin</strong></span>
             <button
               onClick={onLogout}
               className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-xs font-semibold flex items-center space-x-1 transition shadow-sm"
@@ -211,7 +211,7 @@ export default function Admin({ onLogout }) {
           <button
             onClick={() => setTab('dashboard')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
-              tab === 'dashboard' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              tab === 'dashboard' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -220,7 +220,7 @@ export default function Admin({ onLogout }) {
           <button
             onClick={() => setTab('cards')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
-              tab === 'cards' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              tab === 'cards' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <KeyRound className="w-4 h-4" />
@@ -229,7 +229,7 @@ export default function Admin({ onLogout }) {
           <button
             onClick={() => setTab('packages')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
-              tab === 'packages' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              tab === 'packages' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -238,7 +238,7 @@ export default function Admin({ onLogout }) {
           <button
             onClick={() => setTab('settings')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
-              tab === 'settings' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              tab === 'settings' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -247,7 +247,7 @@ export default function Admin({ onLogout }) {
           <button
             onClick={() => setTab('logs')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
-              tab === 'logs' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              tab === 'logs' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <History className="w-4 h-4" />
@@ -264,15 +264,15 @@ export default function Admin({ onLogout }) {
                   <div className="text-3xl font-black text-slate-900 font-mono mt-2">{stats.totalCards || 0}</div>
                   <div className="text-[10px] text-slate-400 mt-1">云端 TiDB 存储归档</div>
                 </div>
-                <div className="bg-white border border-emerald-200 p-5 rounded-2xl shadow-sm">
-                  <div className="text-xs text-emerald-700 font-semibold">已激活使用</div>
-                  <div className="text-3xl font-black text-emerald-700 font-mono mt-2">{stats.activatedCards || 0}</div>
-                  <div className="text-[10px] text-emerald-600 mt-1">正版客户设备在线</div>
-                </div>
                 <div className="bg-white border border-blue-200 p-5 rounded-2xl shadow-sm">
-                  <div className="text-xs text-blue-700 font-semibold">库存未激活</div>
-                  <div className="text-3xl font-black text-blue-700 font-mono mt-2">{stats.unusedCards || 0}</div>
-                  <div className="text-[10px] text-blue-600 mt-1">待售与下发卡密池</div>
+                  <div className="text-xs text-blue-700 font-semibold">已激活使用</div>
+                  <div className="text-3xl font-black text-blue-700 font-mono mt-2">{stats.activatedCards || 0}</div>
+                  <div className="text-[10px] text-blue-600 mt-1">正版客户设备在线</div>
+                </div>
+                <div className="bg-white border border-indigo-200 p-5 rounded-2xl shadow-sm">
+                  <div className="text-xs text-indigo-700 font-semibold">库存未激活</div>
+                  <div className="text-3xl font-black text-indigo-700 font-mono mt-2">{stats.unusedCards || 0}</div>
+                  <div className="text-[10px] text-indigo-600 mt-1">待售与下发卡密池</div>
                 </div>
                 <div className="bg-white border border-amber-200 p-5 rounded-2xl shadow-sm">
                   <div className="text-xs text-amber-700 font-semibold">今日激活数</div>
@@ -305,7 +305,7 @@ export default function Admin({ onLogout }) {
                         <tr key={log.id} className="hover:bg-slate-50/70">
                           <td className="py-2.5 px-3">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              log.action === 'ACTIVATE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              log.action === 'ACTIVATE' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                             }`}>
                               {log.action}
                             </span>
@@ -313,7 +313,7 @@ export default function Admin({ onLogout }) {
                           <td className="py-2.5 px-3 font-mono font-medium text-slate-900">{log.card_key || '-'}</td>
                           <td className="py-2.5 px-3 font-mono text-slate-600 max-w-[180px] truncate">{log.machine_id || '-'}</td>
                           <td className="py-2.5 px-3">
-                            <span className={log.status === 'SUCCESS' ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>{log.message}</span>
+                            <span className={log.status === 'SUCCESS' ? 'text-blue-700 font-semibold' : 'text-rose-600 font-semibold'}>{log.message}</span>
                           </td>
                           <td className="py-2.5 px-3 text-slate-500">{log.created_at}</td>
                         </tr>
@@ -337,7 +337,7 @@ export default function Admin({ onLogout }) {
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && loadCards()}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-600"
                     />
                   </div>
                   <select
@@ -359,7 +359,7 @@ export default function Admin({ onLogout }) {
                     setNewCardList([]);
                     setShowGenModal(true);
                   }}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center space-x-1.5 transition"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center space-x-1.5 transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>批量生成卡密</span>
@@ -387,18 +387,18 @@ export default function Admin({ onLogout }) {
                             <span>{c.card_key}</span>
                             <button
                               onClick={() => handleCopy(c.card_key, c.id)}
-                              className="text-slate-400 hover:text-emerald-600 transition"
+                              className="text-slate-400 hover:text-blue-600 transition"
                             >
-                              {copiedKey === c.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedKey === c.id ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </td>
                           <td className="py-3 px-4 text-slate-700">{c.package_name || '-'}</td>
                           <td className="py-3 px-4 text-slate-600 font-mono">{c.duration_days >= 3650 ? '永久' : `${c.duration_days}天`}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              c.status === 'ACTIVATED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                              c.status === 'UNUSED' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                              'bg-slate-100 text-slate-500 border border-slate-200'
+                              c.status === 'ACTIVATED' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                              c.status === 'UNUSED' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
+                              'bg-rose-50 text-rose-600 border border-rose-200'
                             }`}>
                               {c.status === 'ACTIVATED' ? '已激活' : c.status === 'UNUSED' ? '未激活' : '已过期'}
                             </span>
@@ -472,7 +472,7 @@ export default function Admin({ onLogout }) {
                     setPkgForm({ id: null, name: '', price: '¥39.9', duration_days: 30, description: '', badge: '', sort_order: packages.length + 1, is_active: 1 });
                     setShowPkgModal(true);
                   }}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center space-x-1.5 transition"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center space-x-1.5 transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>新建套餐</span>
@@ -481,22 +481,22 @@ export default function Admin({ onLogout }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {packages.map((pkg) => (
-                  <div key={pkg.id} className="bg-white border border-slate-200 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm hover:border-emerald-500 hover:shadow-md transition">
+                  <div key={pkg.id} className="bg-white border border-slate-200 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm hover:border-blue-500 hover:shadow-md transition">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-base text-slate-900">{pkg.name}</span>
                         {pkg.badge && (
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
                             {pkg.badge}
                           </span>
                         )}
                       </div>
-                      <div className="text-2xl font-black text-emerald-600 font-mono">{pkg.price}</div>
+                      <div className="text-2xl font-black text-blue-600 font-mono">{pkg.price}</div>
                       <div className="text-xs text-slate-500">有效天数: {pkg.duration_days >= 3650 ? '永久' : `${pkg.duration_days}天`}</div>
                       <p className="text-xs text-slate-600 leading-relaxed">{pkg.description || '无详细描述'}</p>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className={`text-[10px] font-bold ${pkg.is_active ? 'text-emerald-700' : 'text-slate-400'}`}>
+                      <span className={`text-[10px] font-bold ${pkg.is_active ? 'text-blue-700' : 'text-slate-400'}`}>
                         {pkg.is_active ? '● 已启用展示' : '○ 已下架隐藏'}
                       </span>
                       <div className="space-x-2">
@@ -531,7 +531,7 @@ export default function Admin({ onLogout }) {
               </div>
 
               {configMsg && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs px-4 py-3 rounded-xl flex items-center space-x-2">
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 text-xs px-4 py-3 rounded-xl flex items-center space-x-2">
                   <Check className="w-4 h-4 shrink-0" />
                   <span>{configMsg}</span>
                 </div>
@@ -545,7 +545,7 @@ export default function Admin({ onLogout }) {
                     value={configs.contact_wechat || ''}
                     onChange={(e) => setConfigs({ ...configs, contact_wechat: e.target.value })}
                     placeholder="例如: TianYi_AI_VIP"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
 
@@ -556,7 +556,7 @@ export default function Admin({ onLogout }) {
                     value={configs.contact_qq || ''}
                     onChange={(e) => setConfigs({ ...configs, contact_qq: e.target.value })}
                     placeholder="例如: 3517427283"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
 
@@ -567,7 +567,7 @@ export default function Admin({ onLogout }) {
                     value={configs.contact_telegram || ''}
                     onChange={(e) => setConfigs({ ...configs, contact_telegram: e.target.value })}
                     placeholder="例如: https://t.me/tianyi_chess"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
 
@@ -578,7 +578,7 @@ export default function Admin({ onLogout }) {
                     value={configs.notice_text || ''}
                     onChange={(e) => setConfigs({ ...configs, notice_text: e.target.value })}
                     placeholder="例如: 购买卡密请直接添加客服微信或QQ，转账后秒发激活码..."
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
 
@@ -588,7 +588,7 @@ export default function Admin({ onLogout }) {
                     type="number"
                     value={configs.trial_duration_hours || '1'}
                     onChange={(e) => setConfigs({ ...configs, trial_duration_hours: e.target.value })}
-                    className="w-full max-w-xs px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full max-w-xs px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
 
@@ -596,7 +596,7 @@ export default function Admin({ onLogout }) {
                   <button
                     type="submit"
                     disabled={configSaving}
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
                   >
                     {configSaving ? '正在保存...' : '保存客服设置并生效'}
                   </button>
@@ -636,7 +636,7 @@ export default function Admin({ onLogout }) {
                         <td className="py-2.5 px-3 font-mono text-slate-600 max-w-[150px] truncate">{l.machine_id || '-'}</td>
                         <td className="py-2.5 px-3 font-mono text-slate-400">{l.ip || '-'}</td>
                         <td className="py-2.5 px-3">
-                          <span className={l.status === 'SUCCESS' ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>{l.message}</span>
+                          <span className={l.status === 'SUCCESS' ? 'text-blue-700 font-semibold' : 'text-rose-600 font-semibold'}>{l.message}</span>
                         </td>
                         <td className="py-2.5 px-3 text-slate-500">{l.created_at}</td>
                       </tr>
@@ -656,15 +656,15 @@ export default function Admin({ onLogout }) {
             
             {newCardList.length > 0 ? (
               <div className="space-y-4">
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-4 py-2 rounded-xl">
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-4 py-2 rounded-xl">
                   成功生成 {newCardList.length} 张新卡密！请点击一键复制保存：
                 </div>
                 <div className="max-h-60 overflow-y-auto bg-slate-50 p-3 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 space-y-1">
                   {newCardList.map((k, idx) => (
                     <div key={idx} className="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
                       <span>{k}</span>
-                      <button onClick={() => handleCopy(k, idx)} className="text-slate-400 hover:text-emerald-600">
-                        {copiedKey === idx ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <button onClick={() => handleCopy(k, idx)} className="text-slate-400 hover:text-blue-600">
+                        {copiedKey === idx ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   ))}
@@ -672,7 +672,7 @@ export default function Admin({ onLogout }) {
                 <div className="flex justify-between items-center pt-2">
                   <button
                     onClick={() => handleCopy(newCardList.join('\n'), 'all')}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm"
                   >
                     {copiedKey === 'all' ? '已复制全部' : '一键复制全部卡密'}
                   </button>
@@ -694,7 +694,7 @@ export default function Admin({ onLogout }) {
                     max="100"
                     value={genCount}
                     onChange={(e) => setGenCount(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
 
@@ -703,7 +703,7 @@ export default function Admin({ onLogout }) {
                   <select
                     value={genPackageId}
                     onChange={(e) => setGenPackageId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   >
                     <option value="">自定义天数</option>
                     {packages.map(p => (
@@ -720,7 +720,7 @@ export default function Admin({ onLogout }) {
                       min="1"
                       value={genCustomDays}
                       onChange={(e) => setGenCustomDays(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                     />
                   </div>
                 )}
@@ -732,7 +732,7 @@ export default function Admin({ onLogout }) {
                     placeholder="例如: 客户微信张三购买"
                     value={genNote}
                     onChange={(e) => setGenNote(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
 
@@ -746,7 +746,7 @@ export default function Admin({ onLogout }) {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm"
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm"
                   >
                     立即生成
                   </button>
@@ -770,7 +770,7 @@ export default function Admin({ onLogout }) {
                   placeholder="例如: 月卡"
                   value={pkgForm.name}
                   onChange={(e) => setPkgForm({ ...pkgForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                 />
               </div>
 
@@ -783,7 +783,7 @@ export default function Admin({ onLogout }) {
                     placeholder="例如: ¥39.9"
                     value={pkgForm.price}
                     onChange={(e) => setPkgForm({ ...pkgForm, price: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
                 <div className="space-y-1">
@@ -794,7 +794,7 @@ export default function Admin({ onLogout }) {
                     min="1"
                     value={pkgForm.duration_days}
                     onChange={(e) => setPkgForm({ ...pkgForm, duration_days: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -807,7 +807,7 @@ export default function Admin({ onLogout }) {
                     placeholder="例如: 热门爆款"
                     value={pkgForm.badge}
                     onChange={(e) => setPkgForm({ ...pkgForm, badge: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
                 <div className="space-y-1">
@@ -816,7 +816,7 @@ export default function Admin({ onLogout }) {
                     type="number"
                     value={pkgForm.sort_order}
                     onChange={(e) => setPkgForm({ ...pkgForm, sort_order: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -828,7 +828,7 @@ export default function Admin({ onLogout }) {
                   placeholder="例如: 30天不限局数畅玩 · 专享AI深度变招与开局云库"
                   value={pkgForm.description}
                   onChange={(e) => setPkgForm({ ...pkgForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600"
                 />
               </div>
 
@@ -838,7 +838,7 @@ export default function Admin({ onLogout }) {
                   id="pkgActive"
                   checked={Boolean(pkgForm.is_active)}
                   onChange={(e) => setPkgForm({ ...pkgForm, is_active: e.target.checked ? 1 : 0 })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="pkgActive" className="text-xs text-slate-700">在客户端与前台页面启用展示</label>
               </div>
@@ -853,7 +853,7 @@ export default function Admin({ onLogout }) {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm"
                 >
                   保存套餐
                 </button>
