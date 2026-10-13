@@ -59,4 +59,32 @@ router.post('/feedback', async (req, res) => {
   }
 });
 
+router.post(['/heartbeat', '/ping'], async (req, res) => {
+  const hwid = req.body.hwid || req.body.machineId || '';
+  const clientVersion = req.body.client_version || req.body.version || '2.0 大师旗舰版';
+  const osInfo = req.body.os_info || req.body.os || '';
+  const cardKey = req.body.card_key || req.body.cardKey || null;
+  const ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || '';
+
+  if (!hwid || !hwid.trim()) {
+    return res.status(400).json({ success: false, message: '设备机器码不能为空' });
+  }
+
+  const { trackUserHeartbeat } = require('../userTracker');
+  const result = await trackUserHeartbeat({
+    hwid,
+    clientVersion,
+    osInfo,
+    ipAddress: ip,
+    cardKey
+  });
+
+  res.json({
+    success: true,
+    server_time: Date.now(),
+    is_online: true,
+    data: result
+  });
+});
+
 module.exports = router;

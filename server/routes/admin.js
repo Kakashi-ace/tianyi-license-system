@@ -92,6 +92,13 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       ORDER BY id DESC LIMIT 10
     `);
 
+    const [userCounts] = await pool.query(`
+      SELECT 
+        COUNT(*) as totalUsers,
+        SUM(CASE WHEN last_heartbeat_at >= NOW() - INTERVAL 120 SECOND THEN 1 ELSE 0 END) as onlineUsers
+      FROM t_app_user
+    `);
+
     res.json({
       success: true,
       stats: {
@@ -102,7 +109,9 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
         disabledCards: cardCounts[0].disabled || 0,
         activePackages: packageCounts[0].count || 0,
         totalTrials: trialCounts[0].count || 0,
-        todayActivations: todayActivations[0].count || 0
+        todayActivations: todayActivations[0].count || 0,
+        totalUsers: userCounts[0]?.totalUsers || 0,
+        onlineUsers: userCounts[0]?.onlineUsers || 0
       },
       recentLogs
     });
@@ -423,6 +432,131 @@ router.delete('/feedbacks/:id', authenticateAdmin, async (req, res) => {
     res.json({ success: true, message: '反馈记录已删除' });
   } catch (err) {
     res.status(500).json({ success: false, message: '删除反馈失败: ' + err.message });
+  }
+});
+
+router.get('/users', authenticateAdmin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '15', 10);
+    const offset = (page - 1) * limit;
+    const { status, keyword, licenseType } = req.query;
+
+    let whereConditions = [];
+    const params = [];
+
+    if (keyword && keyword.trim()) {
+      const kw = `%${keyword.trim()}%`;
+      whereConditions.push('(hwid LIKE ? OR card_key LIKE ? OR remark LIKE ? OR ip_address LIKE ?)');
+      params.push(kw, kw, kw, kw);
+    }
+
+    if (status === 'ONLINE') {
+      whereConditions.push('last_heartbeat_at >= NOW() - INTERVAL 120 SECOND');
+    } else if (status === 'OFFLINE') {
+      whereConditions.push('last_heartbeat_at < NOW() - INTERVAL 120 SECOND');
+    }
+
+    if (licenseType && licenseType !== 'ALL') {
+      if (licenseType === 'ACTIVATED') {
+        whereConditions.push('(card_key IS NOT NULL AND card_key != "")');
+      } else if (licenseType === 'TRIAL') {
+        whereConditions.push('license_type = "TRIAL"');
+      } else if (licenseType === 'FREE') {
+        whereConditions.push('(card_key IS NULL OR card_key = "") AND license_type != "TRIAL"');
+      }
+    }
+
+    const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+
+    const [totalRows] = await pool.query(`SELECT COUNT(*) as total FROM t_app_user ${whereClause}`, params);
+    const [rows] = await pool.query(
+      `SELECT * FROM t_app_user ${whereClause} ORDER BY last_heartbeat_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    const [statRows] = await pool.query(`
+      SELECT 
+        COUNT(*) as totalUsers,
+        SUM(CASE WHEN last_heartbeat_at >= NOW() - INTERVAL 120 SECOND THEN 1 ELSE 0 END) as onlineUsers,
+        SUM(CASE WHEN last_heartbeat_at >= CURDATE() THEN 1 ELSE 0 END) as todayActiveUsers,
+        SUM(CASE WHEN card_key IS NOT NULL AND card_key != '' THEN 1 ELSE 0 END) as activatedUsers,
+        SUM(CASE WHEN (card_key IS NULL OR card_key = '') AND license_type != 'TRIAL' THEN 1 ELSE 0 END) as freeUsers
+      FROM t_app_user
+    `);
+
+    const stats = {
+      totalUsers: statRows[0]?.totalUsers || 0,
+      onlineUsers: statRows[0]?.onlineUsers || 0,
+      todayActiveUsers: statRows[0]?.todayActiveUsers || 0,
+      activatedUsers: statRows[0]?.activatedUsers || 0,
+      freeUsers: statRows[0]?.freeUsers || 0
+    };
+
+    const now = Date.now();
+    const formattedUsers = rows.map(u => {
+      const lastHb = u.last_heartbeat_at ? new Date(u.last_heartbeat_at).getTime() : 0;
+      const isOnline = (now - lastHb) <= 120000;
+      const diffSec = Math.floor((now - lastHb) / 1000);
+      let lastActiveDesc = '';
+      if (isOnline) {
+        lastActiveDesc = '刚刚在线';
+      } else if (diffSec < 3600) {
+        lastActiveDesc = `${Math.max(1, Math.floor(diffSec / 60))} 分钟前`;
+      } else if (diffSec < 86400) {
+        lastActiveDesc = `${Math.floor(diffSec / 3600)} 小时前`;
+      } else {
+        lastActiveDesc = `${Math.floor(diffSec / 86400)} 天前`;
+      }
+
+      return {
+        ...u,
+        is_online: isOnline,
+        last_active_desc: lastActiveDesc
+      };
+    });
+
+    res.json({
+      success: true,
+      total: totalRows[0]?.total || 0,
+      page,
+      limit,
+      users: formattedUsers,
+      stats
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '获取用户列表失败: ' + err.message });
+  }
+});
+
+router.put('/users/:id/remark', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { remark } = req.body;
+    await pool.query('UPDATE t_app_user SET remark = ? WHERE id = ?', [remark || '', id]);
+    res.json({ success: true, message: '用户备注已更新' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '更新用户备注失败: ' + err.message });
+  }
+});
+
+router.post('/users/:id/kick', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE t_app_user SET last_heartbeat_at = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE id = ?', [id]);
+    res.json({ success: true, message: '已强制该用户标记离线' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '操作失败: ' + err.message });
+  }
+});
+
+router.delete('/users/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM t_app_user WHERE id = ?', [id]);
+    res.json({ success: true, message: '设备用户记录已删除' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '删除用户失败: ' + err.message });
   }
 });
 

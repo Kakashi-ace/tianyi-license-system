@@ -147,3 +147,36 @@ export async function deleteFeedback(id) {
   });
   return res.json();
 }
+
+export async function fetchUsers(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_BASE}/api/admin/users?${qs}`, {
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}
+
+export async function updateUserRemark(id, remark) {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/remark`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ remark })
+  });
+  return res.json();
+}
+
+export async function kickUser(id) {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/kick`, {
+    method: 'POST',
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}
+
+export async function deleteUser(id) {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}

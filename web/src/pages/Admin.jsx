@@ -21,8 +21,10 @@ import {
   MessageSquareText,
   Image as ImageIcon,
   X,
-  CheckCheck
+  CheckCheck,
+  Users
 } from 'lucide-react';
+import UserMonitor from '../components/UserMonitor';
 import {
   fetchDashboard,
   fetchCards,
@@ -252,6 +254,23 @@ export default function Admin({ onLogout }) {
             <span>数据大屏看板</span>
           </button>
           <button
+            onClick={() => setTab('users')}
+            className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition ${
+              tab === 'users' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span>终端用户监控</span>
+            </div>
+            {stats.onlineUsers > 0 && (
+              <span className="flex items-center space-x-1 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                <span>{stats.onlineUsers} 在线</span>
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setTab('cards')}
             className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
               tab === 'cards' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -308,25 +327,38 @@ export default function Admin({ onLogout }) {
         <main className="flex-1 space-y-6 min-w-0">
           {tab === 'dashboard' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="bg-white border border-blue-300 p-4 rounded-2xl shadow-sm relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-blue-700 font-bold">实时在线终端</span>
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+                  </div>
+                  <div className="text-2xl font-black text-blue-700 font-mono mt-2">{stats.onlineUsers || 0}</div>
+                  <div className="text-[10px] text-blue-500 mt-1">120s 内活跃设备</div>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+                  <div className="text-xs text-slate-500 font-semibold">累计终端用户</div>
+                  <div className="text-2xl font-black text-slate-900 font-mono mt-2">{stats.totalUsers || 0}</div>
+                  <div className="text-[10px] text-slate-400 mt-1">含未购卡密用户</div>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
                   <div className="text-xs text-slate-500 font-semibold">总生成卡密</div>
-                  <div className="text-3xl font-black text-slate-900 font-mono mt-2">{stats.totalCards || 0}</div>
+                  <div className="text-2xl font-black text-slate-900 font-mono mt-2">{stats.totalCards || 0}</div>
                   <div className="text-[10px] text-slate-400 mt-1">云端 TiDB 存储归档</div>
                 </div>
-                <div className="bg-white border border-blue-200 p-5 rounded-2xl shadow-sm">
+                <div className="bg-white border border-blue-200 p-4 rounded-2xl shadow-sm">
                   <div className="text-xs text-blue-700 font-semibold">已激活使用</div>
-                  <div className="text-3xl font-black text-blue-700 font-mono mt-2">{stats.activatedCards || 0}</div>
-                  <div className="text-[10px] text-blue-600 mt-1">正版客户设备在线</div>
+                  <div className="text-2xl font-black text-blue-700 font-mono mt-2">{stats.activatedCards || 0}</div>
+                  <div className="text-[10px] text-blue-600 mt-1">正版客户绑定</div>
                 </div>
-                <div className="bg-white border border-indigo-200 p-5 rounded-2xl shadow-sm">
+                <div className="bg-white border border-indigo-200 p-4 rounded-2xl shadow-sm">
                   <div className="text-xs text-indigo-700 font-semibold">库存未激活</div>
-                  <div className="text-3xl font-black text-indigo-700 font-mono mt-2">{stats.unusedCards || 0}</div>
+                  <div className="text-2xl font-black text-indigo-700 font-mono mt-2">{stats.unusedCards || 0}</div>
                   <div className="text-[10px] text-indigo-600 mt-1">待售与下发卡密池</div>
                 </div>
-                <div className="bg-white border border-amber-200 p-5 rounded-2xl shadow-sm">
+                <div className="bg-white border border-amber-200 p-4 rounded-2xl shadow-sm">
                   <div className="text-xs text-amber-700 font-semibold">今日激活数</div>
-                  <div className="text-3xl font-black text-amber-700 font-mono mt-2">{stats.todayActivations || 0}</div>
+                  <div className="text-2xl font-black text-amber-700 font-mono mt-2">{stats.todayActivations || 0}</div>
                   <div className="text-[10px] text-amber-600 mt-1">今日新增尊享会员</div>
                 </div>
               </div>
@@ -374,6 +406,8 @@ export default function Admin({ onLogout }) {
               </div>
             </div>
           )}
+
+          {tab === 'users' && <UserMonitor />}
 
           {tab === 'cards' && (
             <div className="space-y-4">
