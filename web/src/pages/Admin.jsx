@@ -17,7 +17,11 @@ import {
   ShieldAlert,
   Clock,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  MessageSquareText,
+  Image as ImageIcon,
+  X,
+  CheckCheck
 } from 'lucide-react';
 import {
   fetchDashboard,
@@ -32,7 +36,10 @@ import {
   deletePackage,
   fetchSystemConfig,
   saveSystemConfig,
-  fetchLogs
+  fetchLogs,
+  fetchFeedbacks,
+  updateFeedbackStatus,
+  deleteFeedback
 } from '../api';
 
 export default function Admin({ onLogout }) {
@@ -58,6 +65,11 @@ export default function Admin({ onLogout }) {
   const [pkgForm, setPkgForm] = useState({ id: null, name: '', price: '¥39.9', duration_days: 30, description: '', badge: '', sort_order: 1, is_active: 1 });
   const [configSaving, setConfigSaving] = useState(false);
   const [configMsg, setConfigMsg] = useState('');
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [feedbacksTotal, setFeedbacksTotal] = useState(0);
+  const [feedbacksPage, setFeedbacksPage] = useState(1);
+  const [feedbackStatus, setFeedbackStatus] = useState('ALL');
+  const [selectedImageModal, setSelectedImageModal] = useState(null);
 
   const loadDashboard = () => {
     fetchDashboard().then(res => {
@@ -95,9 +107,30 @@ export default function Admin({ onLogout }) {
     });
   };
 
+  const loadFeedbacks = () => {
+    fetchFeedbacks(feedbacksPage, 25, feedbackStatus).then(res => {
+      if (res.success) {
+        setFeedbacks(res.feedbacks);
+        setFeedbacksTotal(res.total);
+      }
+    });
+  };
+
+  const handleUpdateFeedbackStatus = async (id, status) => {
+    await updateFeedbackStatus(id, status);
+    loadFeedbacks();
+  };
+
+  const handleDeleteFeedback = async (id) => {
+    if (!window.confirm('确定要删除这条用户反馈记录吗？')) return;
+    await deleteFeedback(id);
+    loadFeedbacks();
+  };
+
   useEffect(() => {
     loadDashboard();
     loadPackages();
+    loadFeedbacks();
   }, []);
 
   useEffect(() => {
@@ -106,7 +139,8 @@ export default function Admin({ onLogout }) {
     if (tab === 'packages') loadPackages();
     if (tab === 'settings') loadConfig();
     if (tab === 'logs') loadAuditLogs();
-  }, [tab, cardsPage, statusFilter]);
+    if (tab === 'feedbacks') loadFeedbacks();
+  }, [tab, cardsPage, statusFilter, feedbacksPage, feedbackStatus]);
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -252,6 +286,22 @@ export default function Admin({ onLogout }) {
           >
             <History className="w-4 h-4" />
             <span>激活审计日志</span>
+          </button>
+          <button
+            onClick={() => setTab('feedbacks')}
+            className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition ${
+              tab === 'feedbacks' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <MessageSquareText className="w-4 h-4 text-blue-600" />
+              <span>Bug 反馈留言</span>
+            </div>
+            {feedbacks.filter(f => f.status === 'PENDING').length > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                {feedbacks.filter(f => f.status === 'PENDING').length}
+              </span>
+            )}
           </button>
         </aside>
 
@@ -572,12 +622,12 @@ export default function Admin({ onLogout }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">购买说明与官方公告</label>
+                  <label className="text-xs font-bold text-slate-700">公告说明</label>
                   <textarea
                     rows={3}
                     value={configs.notice_text || ''}
                     onChange={(e) => setConfigs({ ...configs, notice_text: e.target.value })}
-                    placeholder="例如: 购买卡密请直接添加客服微信或QQ，转账后秒发激活码..."
+                    placeholder="请输入公告或说明..."
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10"
                   />
                 </div>
@@ -644,6 +694,161 @@ export default function Admin({ onLogout }) {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {tab === 'feedbacks' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg flex items-center space-x-2">
+                    <MessageSquareText className="w-5 h-5 text-blue-600" />
+                    <span>Bug 反馈与用户留言工单</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    实时接收天弈AI客户端提交的错误报告、使用建议与排查截图
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                    <button
+                      onClick={() => setFeedbackStatus('ALL')}
+                      className={`px-3 py-1 rounded-lg transition ${feedbackStatus === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      全部 ({feedbacksTotal})
+                    </button>
+                    <button
+                      onClick={() => setFeedbackStatus('PENDING')}
+                      className={`px-3 py-1 rounded-lg transition ${feedbackStatus === 'PENDING' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      待处理 ({feedbacks.filter(f => f.status === 'PENDING').length})
+                    </button>
+                    <button
+                      onClick={() => setFeedbackStatus('RESOLVED')}
+                      className={`px-3 py-1 rounded-lg transition ${feedbackStatus === 'RESOLVED' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      已解决 ({feedbacks.filter(f => f.status === 'RESOLVED').length})
+                    </button>
+                  </div>
+                  <button
+                    onClick={loadFeedbacks}
+                    className="p-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl transition shadow-sm"
+                    title="刷新列表"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {feedbacks.length === 0 ? (
+                <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                  <MessageSquareText className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="text-sm font-semibold text-slate-600">暂无相关反馈工单</p>
+                  <p className="text-xs text-slate-400">客户端用户提交的 Bug 反馈与截图将实时在此展示</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {feedbacks.map((f) => (
+                    <div
+                      key={f.id}
+                      className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition bg-white space-y-3 shadow-sm hover:shadow"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                        <div className="flex items-center space-x-2.5">
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                            f.status === 'RESOLVED'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {f.status === 'RESOLVED' ? '✓ 已解决' : '● 待处理'}
+                          </span>
+                          <span className="font-mono text-xs text-slate-400">#FB-{f.id}</span>
+                          <span className="text-xs text-slate-500">{f.created_at}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {f.status === 'PENDING' ? (
+                            <button
+                              onClick={() => handleUpdateFeedbackStatus(f.id, 'RESOLVED')}
+                              className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center space-x-1 transition"
+                            >
+                              <CheckCheck className="w-3.5 h-3.5" />
+                              <span>标记已解决</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleUpdateFeedbackStatus(f.id, 'PENDING')}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center space-x-1 transition"
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>重置为待处理</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteFeedback(f.id)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                            title="删除此记录"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="text-sm text-slate-800 leading-relaxed font-medium bg-slate-50/70 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
+                          {f.content}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+                        <div className="flex flex-wrap items-center gap-4 text-slate-600">
+                          {f.contact && (
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-slate-400">联系方式:</span>
+                              <span className="font-bold text-slate-800">{f.contact}</span>
+                              <button
+                                onClick={() => handleCopy(f.contact, `fb-contact-${f.id}`)}
+                                className="text-slate-400 hover:text-blue-600"
+                                title="复制联系方式"
+                              >
+                                {copiedKey === `fb-contact-${f.id}` ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          )}
+                          {f.hwid && (
+                            <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+                              <span className="text-slate-400">机器码:</span>
+                              <span className="text-slate-700">{f.hwid}</span>
+                            </div>
+                          )}
+                          {f.client_version && (
+                            <div className="flex items-center space-x-1 text-[11px]">
+                              <span className="text-slate-400">客户端:</span>
+                              <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">v{f.client_version}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {f.image_data && (
+                          <div
+                            onClick={() => setSelectedImageModal(f.image_data)}
+                            className="cursor-pointer group flex items-center space-x-2 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 p-1.5 rounded-lg transition"
+                          >
+                            <img
+                              src={f.image_data}
+                              alt="反馈截图"
+                              className="w-10 h-10 object-cover rounded border border-slate-200 group-hover:scale-105 transition"
+                            />
+                            <div className="text-left pr-1">
+                              <span className="block text-[11px] font-bold text-blue-700 group-hover:underline">点击查看高清截图</span>
+                              <span className="block text-[10px] text-slate-400">截图附件</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
@@ -859,6 +1064,38 @@ export default function Admin({ onLogout }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {selectedImageModal && (
+        <div
+          onClick={() => setSelectedImageModal(null)}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-slate-50">
+              <span className="font-bold text-sm text-slate-800 flex items-center space-x-2">
+                <ImageIcon className="w-4 h-4 text-blue-600" />
+                <span>用户上报排查截图</span>
+              </span>
+              <button
+                onClick={() => setSelectedImageModal(null)}
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 overflow-auto max-h-[80vh] flex items-center justify-center bg-slate-900/5">
+              <img
+                src={selectedImageModal}
+                alt="反馈大图"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-sm"
+              />
+            </div>
           </div>
         </div>
       )}

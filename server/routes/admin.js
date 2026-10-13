@@ -373,4 +373,57 @@ router.get('/logs', authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get('/feedbacks', authenticateAdmin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '20', 10);
+    const status = req.query.status || 'ALL';
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    const params = [];
+    if (status && status !== 'ALL') {
+      whereClause = 'WHERE status = ?';
+      params.push(status);
+    }
+
+    const [totalRows] = await pool.query(`SELECT COUNT(*) as total FROM t_feedback ${whereClause}`, params);
+    const [rows] = await pool.query(
+      `SELECT * FROM t_feedback ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      success: true,
+      total: totalRows[0].total,
+      page,
+      limit,
+      feedbacks: rows
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '获取反馈列表失败: ' + err.message });
+  }
+});
+
+router.put('/feedbacks/:id/status', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    await pool.query('UPDATE t_feedback SET status = ? WHERE id = ?', [status, id]);
+    res.json({ success: true, message: '反馈状态已更新' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '更新反馈状态失败: ' + err.message });
+  }
+});
+
+router.delete('/feedbacks/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM t_feedback WHERE id = ?', [id]);
+    res.json({ success: true, message: '反馈记录已删除' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '删除反馈失败: ' + err.message });
+  }
+});
+
 module.exports = router;

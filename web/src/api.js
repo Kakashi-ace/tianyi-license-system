@@ -123,3 +123,27 @@ export async function fetchLogs(page = 1, limit = 20) {
   });
   return res.json();
 }
+
+export async function fetchFeedbacks(page = 1, limit = 20, status = 'ALL') {
+  const res = await fetch(`${API_BASE}/api/admin/feedbacks?page=${page}&limit=${limit}&status=${status}`, {
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}
+
+export async function updateFeedbackStatus(id, status) {
+  const res = await fetch(`${API_BASE}/api/admin/feedbacks/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ status })
+  });
+  return res.json();
+}
+
+export async function deleteFeedback(id) {
+  const res = await fetch(`${API_BASE}/api/admin/feedbacks/${id}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}
