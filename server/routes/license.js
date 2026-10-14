@@ -223,14 +223,31 @@ router.post(['/verify', '/check'], deviceBlacklistGuard, async (req, res) => {
 });
 
 async function handleTrialCheck(machineId, req, res) {
-  if (!machineId || !machineId.trim()) {
-    return res.json({ success: false, is_activated: false, is_trial_valid: false, message: '未提供设备机器码' });
+  if (!machineId || !machineId.trim() || machineId.trim().length < 10) {
+    return res.status(400).json({ success: false, is_activated: false, is_trial_valid: false, message: '无效设备机器码标识' });
   }
 
   const cleanMachine = machineId.trim();
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   try {
+    if (ip && ip !== '127.0.0.1') {
+      const [ipRows] = await pool.query(
+        'SELECT COUNT(*) as cnt FROM t_trial_record WHERE ip = ? AND start_time >= DATE_SUB(NOW(), INTERVAL 24 HOUR)',
+        [ip]
+      );
+      if (ipRows && ipRows[0] && ipRows[0].cnt >= 3) {
+        return res.status(429).json({
+          success: false,
+          is_activated: false,
+          is_trial_valid: false,
+          remaining_seconds: 0,
+          code: 'IP_TRIAL_LIMIT_EXCEEDED',
+          message: '当前网络 IP 24 小时内试用申请次数已达上限，请购买卡密激活使用或联系客服'
+        });
+      }
+    }
+
     const now = new Date();
     const [cards] = await pool.query(
       'SELECT * FROM t_card_key WHERE machine_id = ? AND status = "ACTIVATED" AND expire_at > NOW() ORDER BY expire_at DESC LIMIT 1',
