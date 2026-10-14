@@ -7,6 +7,8 @@ const pool = mysql.createPool({
   user: process.env.TIDB_USER || 'VYMxcUs7ZvJpiXQ.root',
   password: process.env.TIDB_PASSWORD || 'AG251314',
   database: process.env.TIDB_DATABASE || 'lightinfra_db',
+  timezone: '+08:00',
+  dateStrings: true,
   ssl: {
     rejectUnauthorized: false
   },

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'TianYi_AI_Secret_Key_2026_Secure';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'TianYi_Admin_Master_Key_9988_SuperSecure!';
 
 function authenticateAdmin(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -10,7 +10,7 @@ function authenticateAdmin(req, res, next) {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
     req.admin = decoded;
     next();
   } catch (err) {
@@ -20,5 +20,6 @@ function authenticateAdmin(req, res, next) {
 
 module.exports = {
   authenticateAdmin,
-  JWT_SECRET
+  ADMIN_JWT_SECRET,
+  JWT_SECRET: ADMIN_JWT_SECRET
 };

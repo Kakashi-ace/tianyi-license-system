@@ -12,7 +12,8 @@ const {
 
 function formatDateTime(d) {
   const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const d8 = new Date(d.getTime() + (8 * 60 + d.getTimezoneOffset()) * 60000);
+  return `${d8.getFullYear()}-${pad(d8.getMonth() + 1)}-${pad(d8.getDate())} ${pad(d8.getHours())}:${pad(d8.getMinutes())}:${pad(d8.getSeconds())}`;
 }
 
 router.post('/activate', deviceBlacklistGuard, activationRateLimiter, async (req, res) => {
@@ -68,7 +69,17 @@ router.post('/activate', deviceBlacklistGuard, activationRateLimiter, async (req
       }
 
       if (!card.machine_id) {
-        await pool.query('UPDATE t_card_key SET machine_id = ? WHERE id = ?', [cleanMachine, card.id]);
+        const [bindRes] = await pool.query(
+          'UPDATE t_card_key SET machine_id = ? WHERE id = ? AND (machine_id IS NULL OR machine_id = ?)',
+          [cleanMachine, card.id, cleanMachine]
+        );
+        if (bindRes.affectedRows === 0) {
+          return res.status(409).json({
+            success: false,
+            code: 'CARD_BOUND_OTHER_DEVICE',
+            message: '该卡密已被其他设备抢先绑定，严禁一卡多用！'
+          });
+        }
       }
 
       clearFailedActivation(req.rateLimitKey);

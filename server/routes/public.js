@@ -40,12 +40,32 @@ router.get('/info', async (req, res) => {
   }
 });
 
+const feedbackRateMap = new Map();
+
 router.post('/feedback', async (req, res) => {
   try {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
+    const now = Date.now();
+    const rateInfo = feedbackRateMap.get(ip) || { count: 0, resetAt: now + 300000 };
+    if (now > rateInfo.resetAt) {
+      rateInfo.count = 0;
+      rateInfo.resetAt = now + 300000;
+    }
+    if (rateInfo.count >= 3) {
+      return res.status(429).json({ success: false, message: '提交反馈过于频繁，请稍候再试' });
+    }
+
     const { content, contact, image, hwid, version } = req.body;
     if (!content || !content.trim()) {
       return res.status(400).json({ success: false, message: '留言反馈内容不能为空' });
     }
+    if (image && image.length > 3 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: '反馈截图文件体积过大，请压缩至 2MB 以内' });
+    }
+
+    rateInfo.count++;
+    feedbackRateMap.set(ip, rateInfo);
+
     const [result] = await pool.query(
       'INSERT INTO t_feedback (hwid, client_version, contact, content, image_data, status) VALUES (?, ?, ?, ?, ?, ?)',
       [hwid || null, version || '2.0.0', contact || '', content.trim(), image || null, 'PENDING']
