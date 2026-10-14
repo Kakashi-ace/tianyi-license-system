@@ -452,9 +452,11 @@ router.get('/users', authenticateAdmin, async (req, res) => {
     }
 
     if (status === 'ONLINE') {
-      whereConditions.push('last_heartbeat_at >= NOW() - INTERVAL 120 SECOND');
+      whereConditions.push('last_heartbeat_at >= NOW() - INTERVAL 120 SECOND AND (is_blacklisted = 0 OR is_blacklisted IS NULL)');
     } else if (status === 'OFFLINE') {
-      whereConditions.push('last_heartbeat_at < NOW() - INTERVAL 120 SECOND');
+      whereConditions.push('(last_heartbeat_at < NOW() - INTERVAL 120 SECOND OR last_heartbeat_at IS NULL) AND (is_blacklisted = 0 OR is_blacklisted IS NULL)');
+    } else if (status === 'BLACKLISTED') {
+      whereConditions.push('is_blacklisted = 1');
     }
 
     if (licenseType && licenseType !== 'ALL') {
@@ -478,10 +480,11 @@ router.get('/users', authenticateAdmin, async (req, res) => {
     const [statRows] = await pool.query(`
       SELECT 
         COUNT(*) as totalUsers,
-        SUM(CASE WHEN last_heartbeat_at >= NOW() - INTERVAL 120 SECOND THEN 1 ELSE 0 END) as onlineUsers,
+        SUM(CASE WHEN last_heartbeat_at >= NOW() - INTERVAL 120 SECOND AND (is_blacklisted = 0 OR is_blacklisted IS NULL) THEN 1 ELSE 0 END) as onlineUsers,
         SUM(CASE WHEN last_heartbeat_at >= CURDATE() THEN 1 ELSE 0 END) as todayActiveUsers,
         SUM(CASE WHEN card_key IS NOT NULL AND card_key != '' THEN 1 ELSE 0 END) as activatedUsers,
-        SUM(CASE WHEN (card_key IS NULL OR card_key = '') AND license_type != 'TRIAL' THEN 1 ELSE 0 END) as freeUsers
+        SUM(CASE WHEN (card_key IS NULL OR card_key = '') AND license_type != 'TRIAL' THEN 1 ELSE 0 END) as freeUsers,
+        SUM(CASE WHEN is_blacklisted = 1 THEN 1 ELSE 0 END) as blacklistedUsers
       FROM t_app_user
     `);
 
@@ -490,16 +493,19 @@ router.get('/users', authenticateAdmin, async (req, res) => {
       onlineUsers: statRows[0]?.onlineUsers || 0,
       todayActiveUsers: statRows[0]?.todayActiveUsers || 0,
       activatedUsers: statRows[0]?.activatedUsers || 0,
-      freeUsers: statRows[0]?.freeUsers || 0
+      freeUsers: statRows[0]?.freeUsers || 0,
+      blacklistedUsers: statRows[0]?.blacklistedUsers || 0
     };
 
     const now = Date.now();
     const formattedUsers = rows.map(u => {
       const lastHb = u.last_heartbeat_at ? new Date(u.last_heartbeat_at).getTime() : 0;
-      const isOnline = (now - lastHb) <= 120000;
+      const isOnline = (now - lastHb) <= 120000 && !u.is_blacklisted;
       const diffSec = Math.floor((now - lastHb) / 1000);
       let lastActiveDesc = '';
-      if (isOnline) {
+      if (u.is_blacklisted) {
+        lastActiveDesc = '已封禁';
+      } else if (isOnline) {
         lastActiveDesc = '刚刚在线';
       } else if (diffSec < 3600) {
         lastActiveDesc = `${Math.max(1, Math.floor(diffSec / 60))} 分钟前`;
@@ -512,6 +518,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
       return {
         ...u,
         is_online: isOnline,
+        is_blacklisted: Boolean(u.is_blacklisted),
         last_active_desc: lastActiveDesc
       };
     });
@@ -557,6 +564,52 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
     res.json({ success: true, message: '设备用户记录已删除' });
   } catch (err) {
     res.status(500).json({ success: false, message: '删除用户失败: ' + err.message });
+  }
+});
+
+router.post('/blacklist', authenticateAdmin, async (req, res) => {
+  try {
+    const { hwid, reason = '违规使用或恶意破解' } = req.body;
+    if (!hwid || !hwid.trim()) {
+      return res.status(400).json({ success: false, message: '设备机器码不能为空' });
+    }
+    const cleanHwid = hwid.trim();
+    await pool.query(
+      'INSERT INTO t_device_blacklist (hwid, reason, operator) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reason = VALUES(reason), operator = VALUES(operator)',
+      [cleanHwid, reason, req.admin?.username || 'admin']
+    );
+    await pool.query(
+      'UPDATE t_app_user SET is_blacklisted = 1, blacklist_reason = ?, last_heartbeat_at = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE hwid = ?',
+      [reason, cleanHwid]
+    );
+    const { syncBlacklistCache } = require('../security');
+    await syncBlacklistCache(true);
+    res.json({ success: true, message: `已成功将设备 ${cleanHwid} 列入封禁黑名单` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '拉黑操作异常: ' + err.message });
+  }
+});
+
+router.delete('/blacklist/:hwid', authenticateAdmin, async (req, res) => {
+  try {
+    const { hwid } = req.params;
+    const cleanHwid = decodeURIComponent(hwid).trim();
+    await pool.query('DELETE FROM t_device_blacklist WHERE hwid = ?', [cleanHwid]);
+    await pool.query('UPDATE t_app_user SET is_blacklisted = 0, blacklist_reason = "" WHERE hwid = ?', [cleanHwid]);
+    const { syncBlacklistCache } = require('../security');
+    await syncBlacklistCache(true);
+    res.json({ success: true, message: `已解除设备 ${cleanHwid} 的黑名单封禁` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '解除封禁失败: ' + err.message });
+  }
+});
+
+router.get('/blacklist', authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM t_device_blacklist ORDER BY created_at DESC');
+    res.json({ success: true, list: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

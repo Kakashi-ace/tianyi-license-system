@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { isDeviceBlacklisted } = require('../security');
 
 router.get('/health', async (req, res) => {
   try {
@@ -64,10 +65,20 @@ router.post(['/heartbeat', '/ping'], async (req, res) => {
   const clientVersion = req.body.client_version || req.body.version || '2.0 大师旗舰版';
   const osInfo = req.body.os_info || req.body.os || '';
   const cardKey = req.body.card_key || req.body.cardKey || null;
-  const ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || '';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   if (!hwid || !hwid.trim()) {
     return res.status(400).json({ success: false, message: '设备机器码不能为空' });
+  }
+
+  const { blacklisted, reason } = await isDeviceBlacklisted(hwid);
+  if (blacklisted) {
+    return res.status(403).json({
+      success: false,
+      is_blacklisted: true,
+      code: 'DEVICE_BLACKLISTED',
+      message: `该设备已被管理员加入黑名单封禁，严禁使用（原因: ${reason}）`
+    });
   }
 
   const { trackUserHeartbeat } = require('../userTracker');
@@ -83,6 +94,7 @@ router.post(['/heartbeat', '/ping'], async (req, res) => {
     success: true,
     server_time: Date.now(),
     is_online: true,
+    is_blacklisted: false,
     data: result
   });
 });

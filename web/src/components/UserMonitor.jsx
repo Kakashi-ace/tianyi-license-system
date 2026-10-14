@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, RefreshCw } from 'lucide-react';
-import { fetchUsers, updateUserRemark, kickUser, deleteUser } from '../api';
+import { fetchUsers, updateUserRemark, kickUser, deleteUser, blacklistDevice, unblockDevice } from '../api';
 import UserStatCards from './UserStatCards';
 import UserTableRow from './UserTableRow';
 
@@ -12,7 +12,7 @@ export default function UserMonitor() {
   const [status, setStatus] = useState('ALL');
   const [licenseType, setLicenseType] = useState('ALL');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [stats, setStats] = useState({ totalUsers: 0, onlineUsers: 0, todayActiveUsers: 0, activatedUsers: 0, freeUsers: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, onlineUsers: 0, todayActiveUsers: 0, activatedUsers: 0, freeUsers: 0, blacklistedUsers: 0 });
   const [editingId, setEditingId] = useState(null);
   const [editingRemark, setEditingRemark] = useState('');
   const [copiedHwid, setCopiedHwid] = useState('');
@@ -64,16 +64,37 @@ export default function UserMonitor() {
     loadData();
   };
 
+  const handleBlacklist = async (hwid) => {
+    const reason = window.prompt(`请输入封禁设备 [${hwid}] 的原因：`, '违规多开或恶意破解');
+    if (reason === null) return;
+    const res = await blacklistDevice(hwid, reason || '违规使用已被系统封禁');
+    if (res.success) {
+      loadData();
+    } else {
+      alert(res.message || '操作失败');
+    }
+  };
+
+  const handleUnblock = async (hwid) => {
+    if (!window.confirm(`确认解除对设备 [${hwid}] 的黑名单封禁？`)) return;
+    const res = await unblockDevice(hwid);
+    if (res.success) {
+      loadData();
+    } else {
+      alert(res.message || '操作失败');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <span>全量终端用户监控</span>
+            <span>全量终端用户监控与设备安全风控</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            无论是否购买卡密，只要使用软件即自动识别纳入管理，实时掌控活跃度与在线状态
+            实时掌控设备在线状态、一卡一机绑定与封禁黑名单管理，保障商业授权安全
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -116,9 +137,10 @@ export default function UserMonitor() {
           onChange={e => setStatus(e.target.value)}
           className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="ALL">全部在线状态</option>
+          <option value="ALL">全部设备状态</option>
           <option value="ONLINE">🟢 仅看在线</option>
           <option value="OFFLINE">⚪ 仅看离线</option>
+          <option value="BLACKLISTED">🚫 仅看封禁设备</option>
         </select>
         <select
           value={licenseType}
@@ -150,7 +172,7 @@ export default function UserMonitor() {
                 <th className="py-3 px-4">网络 IP</th>
                 <th className="py-3 px-4">最近活跃 / 首次使用</th>
                 <th className="py-3 px-4">管理员备注</th>
-                <th className="py-3 px-4 text-right">操作管理</th>
+                <th className="py-3 px-4 text-right">安全管控</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -174,6 +196,8 @@ export default function UserMonitor() {
                     onSaveRemark={handleSaveRemark}
                     onKick={handleKick}
                     onDelete={handleDelete}
+                    onBlacklist={handleBlacklist}
+                    onUnblock={handleUnblock}
                   />
                 ))
               )}

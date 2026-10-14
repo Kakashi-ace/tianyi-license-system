@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Check, Trash2, PowerOff, Edit3, Save, X } from 'lucide-react';
+import { Copy, Check, Trash2, PowerOff, Edit3, Save, X, Ban, ShieldCheck } from 'lucide-react';
 
 export default function UserTableRow({
   user: u,
@@ -11,12 +11,19 @@ export default function UserTableRow({
   setEditingRemark,
   onSaveRemark,
   onKick,
-  onDelete
+  onDelete,
+  onBlacklist,
+  onUnblock
 }) {
   return (
-    <tr className="hover:bg-slate-50/80 transition">
+    <tr className={`transition ${u.is_blacklisted ? 'bg-rose-50/40 hover:bg-rose-50/70' : 'hover:bg-slate-50/80'}`}>
       <td className="py-3 px-4 whitespace-nowrap">
-        {u.is_online ? (
+        {u.is_blacklisted ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200" title={u.blacklist_reason || '违规已被系统封禁'}>
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+            <span>已封禁</span>
+          </span>
+        ) : u.is_online ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
             <span>在线</span>
@@ -41,6 +48,11 @@ export default function UserTableRow({
             {copiedHwid === u.hwid ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
+        {u.is_blacklisted && u.blacklist_reason && (
+          <div className="text-[10px] text-rose-600 truncate max-w-[140px] font-medium mt-0.5">
+            原因: {u.blacklist_reason}
+          </div>
+        )}
       </td>
       <td className="py-3 px-4">
         {u.card_key ? (
@@ -108,17 +120,35 @@ export default function UserTableRow({
       </td>
       <td className="py-3 px-4 text-right whitespace-nowrap">
         <div className="flex items-center justify-end gap-1.5">
+          {u.is_blacklisted ? (
+            <button
+              onClick={() => onUnblock(u.hwid)}
+              className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 transition border border-emerald-200"
+              title="解除黑名单封禁"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => onBlacklist(u.hwid)}
+              className="p-1 rounded-lg text-rose-600 hover:bg-rose-50 transition border border-rose-200"
+              title="拉黑封禁该设备"
+            >
+              <Ban className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => onKick(u.id)}
-            className="px-2 py-1 rounded text-[11px] font-semibold text-slate-600 hover:bg-slate-100 transition"
+            disabled={u.is_blacklisted}
+            className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 transition disabled:opacity-30"
             title="强制标记离线"
           >
-            <PowerOff className="w-3.5 h-3.5 text-slate-500 hover:text-rose-600" />
+            <PowerOff className="w-3.5 h-3.5 hover:text-rose-600" />
           </button>
           <button
             onClick={() => onDelete(u.id)}
-            className="px-2 py-1 rounded text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition"
-            title="删除记录"
+            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+            title="删除设备记录"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

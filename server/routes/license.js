@@ -1,16 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const {
+  isDeviceBlacklisted,
+  deviceBlacklistGuard,
+  activationRateLimiter,
+  recordFailedActivation,
+  clearFailedActivation,
+  signLicenseToken
+} = require('../security');
 
 function formatDateTime(d) {
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-router.post('/activate', async (req, res) => {
+router.post('/activate', deviceBlacklistGuard, activationRateLimiter, async (req, res) => {
   const cardKey = req.body.cardKey || req.body.card_key || '';
   const machineId = req.body.machineId || req.body.hwid || '';
-  const ip = req.ip || req.connection.remoteAddress || '';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   if (!cardKey || !cardKey.trim()) {
     return res.status(400).json({ success: false, message: '卡密不能为空' });
@@ -25,6 +33,7 @@ router.post('/activate', async (req, res) => {
   try {
     const [cards] = await pool.query('SELECT * FROM t_card_key WHERE card_key = ?', [cleanKey]);
     if (cards.length === 0) {
+      recordFailedActivation(req.rateLimitKey);
       await pool.query(
         'INSERT INTO t_activation_log (card_key, machine_id, ip, action, status, message) VALUES (?, ?, ?, ?, ?, ?)',
         [cleanKey, cleanMachine, ip, 'ACTIVATE', 'FAILED', '卡密不存在']
@@ -45,7 +54,11 @@ router.post('/activate', async (req, res) => {
           'INSERT INTO t_activation_log (card_key, machine_id, ip, action, status, message) VALUES (?, ?, ?, ?, ?, ?)',
           [cleanKey, cleanMachine, ip, 'ACTIVATE', 'FAILED', '卡密已被其他设备绑定']
         );
-        return res.status(409).json({ success: false, message: '该卡密已在其他设备绑定激活，如需换绑请联系客服解绑' });
+        return res.status(409).json({
+          success: false,
+          code: 'CARD_BOUND_OTHER_DEVICE',
+          message: '该卡密已在其他设备绑定激活，严禁一卡多机！如需换绑请联系客服'
+        });
       }
 
       const expireDate = new Date(card.expire_at);
@@ -54,26 +67,24 @@ router.post('/activate', async (req, res) => {
         return res.status(410).json({ success: false, message: '该卡密已过有效期，请联系客服续期购买' });
       }
 
-      await pool.query(
-        'INSERT INTO t_activation_log (card_key, machine_id, ip, action, status, message) VALUES (?, ?, ?, ?, ?, ?)',
-        [cleanKey, cleanMachine, ip, 'ACTIVATE', 'SUCCESS', '本设备恢复激活状态']
-      );
-
+      clearFailedActivation(req.rateLimitKey);
       const remSec = Math.max(0, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
+      const expSec = Math.floor(expireDate.getTime() / 1000);
+      const token = signLicenseToken(cleanMachine, expSec, card.package_name || 'VIP');
 
       return res.json({
         success: true,
         is_activated: true,
         is_trial_valid: true,
         license_type: card.package_name || 'VIP',
-        expires_at: Math.floor(expireDate.getTime() / 1000),
+        expires_at: expSec,
         remaining_seconds: remSec,
         message: '激活恢复成功',
         cardKey: card.card_key,
         packageName: card.package_name,
         expireAt: card.expire_at,
         expireTimestamp: expireDate.getTime(),
-        token: `${cleanMachine}_${expireDate.getTime()}`
+        token
       });
     }
 
@@ -85,24 +96,31 @@ router.post('/activate', async (req, res) => {
     const expireStr = formatDateTime(expireDate);
     const nowStr = formatDateTime(now);
 
-    await pool.query(
-      'UPDATE t_card_key SET status = "ACTIVATED", machine_id = ?, activated_at = ?, expire_at = ? WHERE id = ?',
+    const [updateResult] = await pool.query(
+      'UPDATE t_card_key SET status = "ACTIVATED", machine_id = ?, activated_at = ?, expire_at = ? WHERE id = ? AND status = "UNUSED"',
       [cleanMachine, nowStr, expireStr, card.id]
     );
 
+    if (updateResult.affectedRows === 0) {
+      return res.status(409).json({ success: false, code: 'CARD_ALREADY_USED', message: '卡密已被使用，一卡只能使用一次！' });
+    }
+
+    clearFailedActivation(req.rateLimitKey);
     await pool.query(
       'INSERT INTO t_activation_log (card_key, machine_id, ip, action, status, message) VALUES (?, ?, ?, ?, ?, ?)',
       [cleanKey, cleanMachine, ip, 'ACTIVATE', 'SUCCESS', `激活成功，有效期 ${card.duration_days} 天`]
     );
 
     const remSec = Math.max(0, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
+    const expSec = Math.floor(expireDate.getTime() / 1000);
+    const token = signLicenseToken(cleanMachine, expSec, card.package_name || 'VIP');
 
     res.json({
       success: true,
       is_activated: true,
       is_trial_valid: true,
       license_type: card.package_name || 'VIP',
-      expires_at: Math.floor(expireDate.getTime() / 1000),
+      expires_at: expSec,
       remaining_seconds: remSec,
       message: '恭喜！卡密授权激活成功',
       cardKey: card.card_key,
@@ -110,15 +128,14 @@ router.post('/activate', async (req, res) => {
       durationDays: card.duration_days,
       expireAt: expireStr,
       expireTimestamp: expireDate.getTime(),
-      token: `${cleanMachine}_${expireDate.getTime()}`
+      token
     });
-
   } catch (err) {
     res.status(500).json({ success: false, message: '激活处理异常: ' + err.message });
   }
 });
 
-router.post(['/verify', '/check'], async (req, res) => {
+router.post(['/verify', '/check'], deviceBlacklistGuard, async (req, res) => {
   const cardKey = req.body.cardKey || req.body.card_key || '';
   const machineId = req.body.machineId || req.body.hwid || '';
 
@@ -132,28 +149,33 @@ router.post(['/verify', '/check'], async (req, res) => {
   try {
     const [cards] = await pool.query('SELECT * FROM t_card_key WHERE card_key = ?', [cleanKey]);
     if (cards.length === 0) {
-      return handleTrialCheck(cleanMachine, req, res);
+      return res.status(404).json({ success: false, isValid: false, message: '卡密不存在' });
     }
 
     const card = cards[0];
     if (card.status !== 'ACTIVATED') {
-      return handleTrialCheck(cleanMachine, req, res);
+      return res.status(403).json({ success: false, isValid: false, message: '卡密尚未激活或已失效' });
     }
 
     if (card.machine_id !== cleanMachine) {
-      return handleTrialCheck(cleanMachine, req, res);
+      return res.status(403).json({
+        success: false,
+        isValid: false,
+        code: 'CARD_MACHINE_MISMATCH',
+        message: '卡密与当前设备机器码不匹配，严禁一卡多设备使用！'
+      });
     }
 
     const now = new Date();
     const expireDate = new Date(card.expire_at);
     if (expireDate <= now) {
       await pool.query('UPDATE t_card_key SET status = "EXPIRED" WHERE id = ?', [card.id]);
-      return handleTrialCheck(cleanMachine, req, res);
+      return res.status(410).json({ success: false, isValid: false, message: '卡密已到期' });
     }
 
-    const remainingMs = expireDate.getTime() - now.getTime();
-    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
-    const remainingHours = (remainingMs / (1000 * 60 * 60)).toFixed(1);
+    const remSec = Math.max(0, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
+    const expSec = Math.floor(expireDate.getTime() / 1000);
+    const token = signLicenseToken(cleanMachine, expSec, card.package_name || 'VIP');
 
     res.json({
       success: true,
@@ -161,16 +183,14 @@ router.post(['/verify', '/check'], async (req, res) => {
       is_activated: true,
       is_trial_valid: true,
       license_type: card.package_name || 'VIP',
-      expires_at: Math.floor(expireDate.getTime() / 1000),
-      remaining_seconds: remainingSeconds,
+      expires_at: expSec,
+      remaining_seconds: remSec,
       cardKey: card.card_key,
       packageName: card.package_name,
       expireAt: card.expire_at,
       expireTimestamp: expireDate.getTime(),
-      remainingHours,
-      token: `${cleanMachine}_${expireDate.getTime()}`
+      token
     });
-
   } catch (err) {
     res.status(500).json({ success: false, isValid: false, message: err.message });
   }
@@ -182,7 +202,7 @@ async function handleTrialCheck(machineId, req, res) {
   }
 
   const cleanMachine = machineId.trim();
-  const ip = req.ip || req.connection.remoteAddress || '';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   try {
     const [trials] = await pool.query('SELECT * FROM t_trial_record WHERE machine_id = ?', [cleanMachine]);
@@ -193,15 +213,17 @@ async function handleTrialCheck(machineId, req, res) {
       const expireDate = new Date(record.expire_time);
       if (expireDate > now) {
         const remainingSeconds = Math.max(1, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
+        const expSec = Math.floor(expireDate.getTime() / 1000);
         return res.json({
           success: true,
           is_activated: false,
           is_trial_valid: true,
           license_type: 'TRIAL',
-          expires_at: Math.floor(expireDate.getTime() / 1000),
+          expires_at: expSec,
           remaining_seconds: remainingSeconds,
           trialExpireAt: record.expire_time,
           trialExpireTimestamp: expireDate.getTime(),
+          token: signLicenseToken(cleanMachine, expSec, 'TRIAL'),
           message: `正在试用中，剩余 ${Math.ceil(remainingSeconds / 60)} 分钟`
         });
       } else {
@@ -230,24 +252,25 @@ async function handleTrialCheck(machineId, req, res) {
       ['TRIAL', cleanMachine, ip, 'TRIAL', 'SUCCESS', '开始1小时免费试用']
     );
 
+    const expSec = Math.floor(expireDate.getTime() / 1000);
     res.json({
       success: true,
       is_activated: false,
       is_trial_valid: true,
       license_type: 'TRIAL',
-      expires_at: Math.floor(expireDate.getTime() / 1000),
+      expires_at: expSec,
       remaining_seconds: 3600,
       trialExpireAt: expireStr,
       trialExpireTimestamp: expireDate.getTime(),
+      token: signLicenseToken(cleanMachine, expSec, 'TRIAL'),
       message: '已开启 1 小时免费试用体验'
     });
-
   } catch (err) {
     res.status(500).json({ success: false, message: '试用检测异常: ' + err.message });
   }
 }
 
-router.post(['/trial', '/trial/check'], async (req, res) => {
+router.post(['/trial', '/trial/check'], deviceBlacklistGuard, async (req, res) => {
   const machineId = req.body.machineId || req.body.hwid;
   return handleTrialCheck(machineId, req, res);
 });
@@ -257,10 +280,20 @@ router.post(['/heartbeat', '/ping'], async (req, res) => {
   const clientVersion = req.body.client_version || req.body.version || '2.0 大师旗舰版';
   const osInfo = req.body.os_info || req.body.os || '';
   const cardKey = req.body.card_key || req.body.cardKey || null;
-  const ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || '';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   if (!hwid || !hwid.trim()) {
     return res.status(400).json({ success: false, message: '设备机器码不能为空' });
+  }
+
+  const { blacklisted, reason } = await isDeviceBlacklisted(hwid);
+  if (blacklisted) {
+    return res.status(403).json({
+      success: false,
+      is_blacklisted: true,
+      code: 'DEVICE_BLACKLISTED',
+      message: `该设备已被系统封禁，拒绝提供服务（原因: ${reason}）`
+    });
   }
 
   const { trackUserHeartbeat } = require('../userTracker');
@@ -276,6 +309,7 @@ router.post(['/heartbeat', '/ping'], async (req, res) => {
     success: true,
     server_time: Date.now(),
     is_online: true,
+    is_blacklisted: false,
     data: result
   });
 });

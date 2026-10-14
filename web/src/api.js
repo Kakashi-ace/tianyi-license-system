@@ -180,3 +180,21 @@ export async function deleteUser(id) {
   });
   return res.json();
 }
+
+export async function blacklistDevice(hwid, reason) {
+  const res = await fetch(`${API_BASE}/api/admin/blacklist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ hwid, reason })
+  });
+  return res.json();
+}
+
+export async function unblockDevice(hwid) {
+  const res = await fetch(`${API_BASE}/api/admin/blacklist/${encodeURIComponent(hwid)}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() }
+  });
+  return res.json();
+}
+
