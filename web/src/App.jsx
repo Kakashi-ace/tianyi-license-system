@@ -20,8 +20,16 @@ export default function App() {
       else if (full.includes('login')) setCurrentView('login');
       else setCurrentView('home');
     };
+    const handleAuthExpired = () => {
+      setHasToken(false);
+      navigate('login');
+    };
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('tianyi_auth_expired', handleAuthExpired);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('tianyi_auth_expired', handleAuthExpired);
+    };
   }, []);
 
   const navigate = (view) => {

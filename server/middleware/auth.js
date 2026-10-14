@@ -14,7 +14,13 @@ function authenticateAdmin(req, res, next) {
     req.admin = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: '登录状态已失效，请重新登录' });
+    try {
+      const decodedOld = jwt.verify(token, process.env.JWT_SECRET || 'TianYi_AI_Secret_Key_2026_Secure');
+      req.admin = decodedOld;
+      next();
+    } catch (e2) {
+      return res.status(401).json({ success: false, message: '登录状态已失效，请重新登录' });
+    }
   }
 }
 

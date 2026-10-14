@@ -5,11 +5,20 @@ function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function handleResponse(res) {
+  if (res.status === 401) {
+    localStorage.removeItem('tianyi_admin_token');
+    localStorage.removeItem('tianyi_admin_user');
+    window.dispatchEvent(new CustomEvent('tianyi_auth_expired'));
+  }
+  return res.json();
+}
+
 export async function fetchVersions() {
   const res = await fetch(`${API_BASE}/api/admin/versions`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function publishVersion(payload) {
@@ -18,7 +27,7 @@ export async function publishVersion(payload) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(payload)
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function toggleVersionActive(id, isActive) {
@@ -27,7 +36,7 @@ export async function toggleVersionActive(id, isActive) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ is_active: isActive })
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteVersion(id) {
@@ -35,5 +44,5 @@ export async function deleteVersion(id) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }

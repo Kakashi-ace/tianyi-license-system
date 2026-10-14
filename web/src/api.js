@@ -5,6 +5,15 @@ function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function handleResponse(res) {
+  if (res.status === 401) {
+    localStorage.removeItem('tianyi_admin_token');
+    localStorage.removeItem('tianyi_admin_user');
+    window.dispatchEvent(new CustomEvent('tianyi_auth_expired'));
+  }
+  return res.json();
+}
+
 export async function fetchPublicInfo() {
   const res = await fetch(`${API_BASE}/api/public/info`);
   return res.json();
@@ -23,7 +32,7 @@ export async function fetchDashboard() {
   const res = await fetch(`${API_BASE}/api/admin/dashboard`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchCards(params = {}) {
@@ -31,7 +40,7 @@ export async function fetchCards(params = {}) {
   const res = await fetch(`${API_BASE}/api/admin/cards?${qs}`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function generateCards(payload) {
@@ -40,7 +49,7 @@ export async function generateCards(payload) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(payload)
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function unbindCard(id) {
@@ -48,7 +57,7 @@ export async function unbindCard(id) {
     method: 'POST',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function extendCard(id, days) {
@@ -57,7 +66,7 @@ export async function extendCard(id, days) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ days })
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteCard(id) {
@@ -65,14 +74,14 @@ export async function deleteCard(id) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchPackagesAdmin() {
   const res = await fetch(`${API_BASE}/api/admin/packages`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function createPackage(data) {
@@ -81,7 +90,7 @@ export async function createPackage(data) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(data)
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function updatePackage(id, data) {
@@ -90,7 +99,7 @@ export async function updatePackage(id, data) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(data)
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deletePackage(id) {
@@ -98,14 +107,14 @@ export async function deletePackage(id) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchSystemConfig() {
   const res = await fetch(`${API_BASE}/api/admin/config`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function saveSystemConfig(configs) {
@@ -114,21 +123,21 @@ export async function saveSystemConfig(configs) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(configs)
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchLogs(page = 1, limit = 20) {
   const res = await fetch(`${API_BASE}/api/admin/logs?page=${page}&limit=${limit}`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchFeedbacks(page = 1, limit = 20, status = 'ALL') {
   const res = await fetch(`${API_BASE}/api/admin/feedbacks?page=${page}&limit=${limit}&status=${status}`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function updateFeedbackStatus(id, status) {
@@ -137,7 +146,7 @@ export async function updateFeedbackStatus(id, status) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ status })
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteFeedback(id) {
@@ -145,7 +154,7 @@ export async function deleteFeedback(id) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function fetchUsers(params = {}) {
@@ -153,7 +162,7 @@ export async function fetchUsers(params = {}) {
   const res = await fetch(`${API_BASE}/api/admin/users?${qs}`, {
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function updateUserRemark(id, remark) {
@@ -162,7 +171,7 @@ export async function updateUserRemark(id, remark) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ remark })
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function kickUser(id) {
@@ -170,7 +179,7 @@ export async function kickUser(id) {
     method: 'POST',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteUser(id) {
@@ -178,7 +187,7 @@ export async function deleteUser(id) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function blacklistDevice(hwid, reason) {
@@ -187,7 +196,7 @@ export async function blacklistDevice(hwid, reason) {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ hwid, reason })
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function unblockDevice(hwid) {
@@ -195,6 +204,6 @@ export async function unblockDevice(hwid) {
     method: 'DELETE',
     headers: { ...getAuthHeader() }
   });
-  return res.json();
+  return handleResponse(res);
 }
 
