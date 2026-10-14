@@ -67,6 +67,10 @@ router.post('/activate', deviceBlacklistGuard, activationRateLimiter, async (req
         return res.status(410).json({ success: false, message: '该卡密已过有效期，请联系客服续期购买' });
       }
 
+      if (!card.machine_id) {
+        await pool.query('UPDATE t_card_key SET machine_id = ? WHERE id = ?', [cleanMachine, card.id]);
+      }
+
       clearFailedActivation(req.rateLimitKey);
       const remSec = Math.max(0, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
       const expSec = Math.floor(expireDate.getTime() / 1000);
@@ -79,7 +83,7 @@ router.post('/activate', deviceBlacklistGuard, activationRateLimiter, async (req
         license_type: card.package_name || 'VIP',
         expires_at: expSec,
         remaining_seconds: remSec,
-        message: '激活恢复成功',
+        message: '激活绑定成功',
         cardKey: card.card_key,
         packageName: card.package_name,
         expireAt: card.expire_at,
@@ -154,11 +158,22 @@ router.post(['/verify', '/check'], deviceBlacklistGuard, async (req, res) => {
 
     const card = cards[0];
     if (card.status !== 'ACTIVATED') {
-      return res.status(403).json({ success: false, isValid: false, message: '卡密尚未激活或已失效' });
+      return res.status(400).json({ success: false, isValid: false, message: '卡密尚未激活或已失效' });
+    }
+
+    if (!card.machine_id) {
+      return res.json({
+        success: false,
+        isValid: false,
+        is_activated: false,
+        is_unbound: true,
+        code: 'CARD_UNBOUND',
+        message: '该卡密已被管理员解绑，请重新绑定或输入卡密激活'
+      });
     }
 
     if (card.machine_id !== cleanMachine) {
-      return res.status(403).json({
+      return res.status(409).json({
         success: false,
         isValid: false,
         code: 'CARD_MACHINE_MISMATCH',
