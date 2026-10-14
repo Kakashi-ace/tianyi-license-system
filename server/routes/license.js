@@ -205,8 +205,34 @@ async function handleTrialCheck(machineId, req, res) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
 
   try {
-    const [trials] = await pool.query('SELECT * FROM t_trial_record WHERE machine_id = ?', [cleanMachine]);
     const now = new Date();
+    const [cards] = await pool.query(
+      'SELECT * FROM t_card_key WHERE machine_id = ? AND status = "ACTIVATED" AND expire_at > NOW() ORDER BY expire_at DESC LIMIT 1',
+      [cleanMachine]
+    );
+    if (cards.length > 0) {
+      const card = cards[0];
+      const expireDate = new Date(card.expire_at);
+      const remSec = Math.max(0, Math.floor((expireDate.getTime() - now.getTime()) / 1000));
+      const expSec = Math.floor(expireDate.getTime() / 1000);
+      const token = signLicenseToken(cleanMachine, expSec, card.package_name || 'VIP');
+      return res.json({
+        success: true,
+        is_activated: true,
+        is_trial_valid: true,
+        license_type: card.package_name || 'VIP',
+        expires_at: expSec,
+        remaining_seconds: remSec,
+        message: '商业授权有效',
+        cardKey: card.card_key,
+        packageName: card.package_name,
+        expireAt: card.expire_at,
+        expireTimestamp: expireDate.getTime(),
+        token
+      });
+    }
+
+    const [trials] = await pool.query('SELECT * FROM t_trial_record WHERE machine_id = ?', [cleanMachine]);
 
     if (trials.length > 0) {
       const record = trials[0];
