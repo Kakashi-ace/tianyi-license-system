@@ -3,6 +3,7 @@ import { Users, Search, RefreshCw } from 'lucide-react';
 import { fetchUsers, updateUserRemark, kickUser, deleteUser, blacklistDevice, unblockDevice } from '../api';
 import UserStatCards from './UserStatCards';
 import UserTableRow from './UserTableRow';
+import ActionModal from './ActionModal';
 
 export default function UserMonitor() {
   const [users, setUsers] = useState([]);
@@ -17,6 +18,7 @@ export default function UserMonitor() {
   const [editingRemark, setEditingRemark] = useState('');
   const [copiedHwid, setCopiedHwid] = useState('');
   const [loading, setLoading] = useState(false);
+  const [modalConfig, setModalConfig] = useState(null);
 
   const loadData = () => {
     setLoading(true);
@@ -52,37 +54,74 @@ export default function UserMonitor() {
     loadData();
   };
 
-  const handleKick = async (id) => {
-    if (!window.confirm('确认强制标记该用户设备为离线状态？')) return;
-    await kickUser(id);
-    loadData();
+  const handleKick = (id, hwid) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: '强制标记设备离线',
+      targetBadge: `机器码: ${hwid}`,
+      description: '确定将该设备强制标记为离线状态吗？客户端将在下一次心跳周期重新连线上报。',
+      confirmText: '强制离线',
+      onConfirm: async () => {
+        await kickUser(id);
+        setModalConfig(null);
+        loadData();
+      }
+    });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('确认彻底删除该设备记录？下次启动软件将重新以新用户登记。')) return;
-    await deleteUser(id);
-    loadData();
+  const handleDelete = (id, hwid) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'danger',
+      title: '彻底删除设备记录',
+      targetBadge: `机器码: ${hwid}`,
+      description: '确定要从数据库中彻底清除该设备登记吗？下次启动软件将重新以新用户登记入库。',
+      confirmText: '彻底删除',
+      onConfirm: async () => {
+        await deleteUser(id);
+        setModalConfig(null);
+        loadData();
+      }
+    });
   };
 
-  const handleBlacklist = async (hwid) => {
-    const reason = window.prompt(`请输入封禁设备 [${hwid}] 的原因：`, '违规多开或恶意破解');
-    if (reason === null) return;
-    const res = await blacklistDevice(hwid, reason || '违规使用已被系统封禁');
-    if (res.success) {
-      loadData();
-    } else {
-      alert(res.message || '操作失败');
-    }
+  const handleBlacklist = (hwid) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'danger',
+      title: '拉黑并封禁该终端设备',
+      targetBadge: `机器码: ${hwid}`,
+      description: '设备被封禁后，其发起的一切激活、心跳与推演请求将被直接阻断拦截，客户端将强制停止对局并锁定。',
+      inputConfig: {
+        label: '封禁原因说明',
+        placeholder: '请输入封禁原因...',
+        defaultValue: '违规多开或恶意破解',
+        presets: ['违规多开', '恶意破解', '倒卖卡密', '异常高频']
+      },
+      confirmText: '立即封禁',
+      onConfirm: async (reason) => {
+        await blacklistDevice(hwid, reason || '违规使用已被系统封禁');
+        setModalConfig(null);
+        loadData();
+      }
+    });
   };
 
-  const handleUnblock = async (hwid) => {
-    if (!window.confirm(`确认解除对设备 [${hwid}] 的黑名单封禁？`)) return;
-    const res = await unblockDevice(hwid);
-    if (res.success) {
-      loadData();
-    } else {
-      alert(res.message || '操作失败');
-    }
+  const handleUnblock = (hwid) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: '解除设备黑名单封禁',
+      targetBadge: `机器码: ${hwid}`,
+      description: '确定解除对该设备的黑名单拦截吗？解除后该设备将恢复正常使用商业授权与免费试用权限。',
+      confirmText: '恢复正常使用',
+      onConfirm: async () => {
+        await unblockDevice(hwid);
+        setModalConfig(null);
+        loadData();
+      }
+    });
   };
 
   return (
@@ -162,17 +201,17 @@ export default function UserMonitor() {
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[960px]">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold">
-                <th className="py-3 px-4">在线状态</th>
-                <th className="py-3 px-4">终端机器码 (HWID)</th>
-                <th className="py-3 px-4">授权卡密状态</th>
-                <th className="py-3 px-4">客户端版本与系统</th>
-                <th className="py-3 px-4">网络 IP</th>
-                <th className="py-3 px-4">最近活跃 / 首次使用</th>
-                <th className="py-3 px-4">管理员备注</th>
-                <th className="py-3 px-4 text-right">安全管控</th>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold">
+                <th className="py-3 px-3.5 w-24">状态</th>
+                <th className="py-3 px-3.5 w-36">终端设备 (HWID)</th>
+                <th className="py-3 px-3.5 w-44">授权与卡密</th>
+                <th className="py-3 px-3.5 w-36">客户端与系统</th>
+                <th className="py-3 px-3.5 w-32">网络 IP</th>
+                <th className="py-3 px-3.5 w-28">活跃时间</th>
+                <th className="py-3 px-3.5 min-w-[100px]">管理员备注</th>
+                <th className="py-3 px-3.5 w-28 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -225,6 +264,8 @@ export default function UserMonitor() {
           </div>
         </div>
       </div>
+
+      <ActionModal {...modalConfig} onClose={() => setModalConfig(null)} />
     </div>
   );
 }

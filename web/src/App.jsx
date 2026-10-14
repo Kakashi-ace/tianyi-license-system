@@ -5,9 +5,9 @@ import Admin from './pages/Admin';
 
 export default function App() {
   const [currentView, setCurrentView] = useState(() => {
-    const path = window.location.pathname;
-    if (path.includes('/admin')) return 'admin';
-    if (path.includes('/login')) return 'login';
+    const full = window.location.pathname + window.location.hash;
+    if (full.includes('admin')) return 'admin';
+    if (full.includes('login')) return 'login';
     return 'home';
   });
 
@@ -15,9 +15,9 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path.includes('/admin')) setCurrentView('admin');
-      else if (path.includes('/login')) setCurrentView('login');
+      const full = window.location.pathname + window.location.hash;
+      if (full.includes('admin')) setCurrentView('admin');
+      else if (full.includes('login')) setCurrentView('login');
       else setCurrentView('home');
     };
     window.addEventListener('popstate', handlePopState);

@@ -25,6 +25,7 @@ import {
   Users
 } from 'lucide-react';
 import UserMonitor from '../components/UserMonitor';
+import ActionModal from '../components/ActionModal';
 import {
   fetchDashboard,
   fetchCards,
@@ -72,6 +73,7 @@ export default function Admin({ onLogout }) {
   const [feedbacksPage, setFeedbacksPage] = useState(1);
   const [feedbackStatus, setFeedbackStatus] = useState('ALL');
   const [selectedImageModal, setSelectedImageModal] = useState(null);
+  const [actionModal, setActionModal] = useState(null);
 
   const loadDashboard = () => {
     fetchDashboard().then(res => {
@@ -123,10 +125,19 @@ export default function Admin({ onLogout }) {
     loadFeedbacks();
   };
 
-  const handleDeleteFeedback = async (id) => {
-    if (!window.confirm('确定要删除这条用户反馈记录吗？')) return;
-    await deleteFeedback(id);
-    loadFeedbacks();
+  const handleDeleteFeedback = (id) => {
+    setActionModal({
+      isOpen: true,
+      type: 'danger',
+      title: '删除用户反馈记录',
+      description: '确定要彻底删除这条用户反馈与排查截图吗？删除后不可恢复。',
+      confirmText: '确认删除',
+      onConfirm: async () => {
+        await deleteFeedback(id);
+        setActionModal(null);
+        loadFeedbacks();
+      }
+    });
   };
 
   useEffect(() => {
@@ -150,26 +161,67 @@ export default function Admin({ onLogout }) {
     setTimeout(() => setCopiedKey(''), 2000);
   };
 
-  const handleUnbind = async (id) => {
-    if (!window.confirm('确认解绑此卡密的设备机器码？解绑后客户可在新电脑重新绑定。')) return;
-    const res = await unbindCard(id);
-    if (res.success) loadCards();
+  const handleUnbind = (id, cardKey) => {
+    setActionModal({
+      isOpen: true,
+      type: 'warning',
+      title: '解绑卡密设备绑定',
+      targetBadge: cardKey ? `卡密: ${cardKey}` : null,
+      description: '确定解绑此卡密的设备机器码绑定吗？解绑后客户可在新电脑重新登记绑定。',
+      confirmText: '确认解绑',
+      onConfirm: async () => {
+        await unbindCard(id);
+        setActionModal(null);
+        loadCards();
+      }
+    });
   };
 
-  const handleExtend = async (id) => {
-    const days = window.prompt('请输入需要延长的天数：', '30');
-    if (!days || isNaN(days)) return;
-    const res = await extendCard(id, parseInt(days, 10));
-    if (res.success) {
-      alert(res.message);
-      loadCards();
-    }
+  const handleExtend = (id, cardKey) => {
+    setActionModal({
+      isOpen: true,
+      type: 'info',
+      title: '延长卡密有效时长',
+      targetBadge: cardKey ? `卡密: ${cardKey}` : null,
+      description: '请输入需要延长的天数，卡密到期时间将自动顺延。',
+      inputConfig: {
+        label: '延长天数',
+        type: 'number',
+        placeholder: '天数 (如 30)',
+        defaultValue: '30',
+        presets: [
+          { label: '+7天', value: '7' },
+          { label: '+30天', value: '30' },
+          { label: '+90天', value: '90' },
+          { label: '+365天', value: '365' }
+        ]
+      },
+      confirmText: '确认延长',
+      onConfirm: async (days) => {
+        const num = parseInt(days, 10);
+        if (num > 0) {
+          await extendCard(id, num);
+          setActionModal(null);
+          loadCards();
+        }
+      }
+    });
   };
 
-  const handleDeleteCard = async (id) => {
-    if (!window.confirm('确定要彻底删除此卡密吗？')) return;
-    const res = await deleteCard(id);
-    if (res.success) loadCards();
+  const handleDeleteCard = (id, cardKey) => {
+    setActionModal({
+      isOpen: true,
+      type: 'danger',
+      title: '彻底删除卡密资产',
+      targetBadge: cardKey ? `卡密: ${cardKey}` : null,
+      description: '确定要彻底删除此卡密记录吗？删除后客户将无法继续以此卡密激活软件。',
+      confirmText: '彻底删除',
+      onConfirm: async () => {
+        await deleteCard(id);
+        setActionModal(null);
+        loadCards();
+      }
+    });
   };
 
   const handleGenerateCards = async (e) => {
@@ -198,10 +250,20 @@ export default function Admin({ onLogout }) {
     loadPackages();
   };
 
-  const handleDeletePackage = async (id) => {
-    if (!window.confirm('确定要删除此套餐吗？已生成的卡密不受影响。')) return;
-    await deletePackage(id);
-    loadPackages();
+  const handleDeletePackage = (id, pkgName) => {
+    setActionModal({
+      isOpen: true,
+      type: 'danger',
+      title: '删除套餐配置',
+      targetBadge: pkgName ? `套餐: ${pkgName}` : null,
+      description: '确定要删除此套餐配置吗？已根据该套餐生成的卡密与客户授权不受影响。',
+      confirmText: '确认删除',
+      onConfirm: async () => {
+        await deletePackage(id);
+        setActionModal(null);
+        loadPackages();
+      }
+    });
   };
 
   const handleSaveConfig = async (e) => {
@@ -242,7 +304,7 @@ export default function Admin({ onLogout }) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 w-full flex-1 flex flex-col md:flex-row gap-6">
+      <div className="max-w-[1520px] mx-auto px-4 sm:px-6 py-6 w-full flex-1 flex flex-col md:flex-row gap-6">
         <aside className="w-full md:w-56 shrink-0 space-y-1.5">
           <button
             onClick={() => setTab('dashboard')}
@@ -492,7 +554,7 @@ export default function Admin({ onLogout }) {
                           <td className="py-3 px-4 text-right space-x-2">
                             {c.machine_id && (
                               <button
-                                onClick={() => handleUnbind(c.id)}
+                                onClick={() => handleUnbind(c.id, c.card_key)}
                                 title="解绑设备机器码"
                                 className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded text-[11px] font-bold transition"
                               >
@@ -500,14 +562,14 @@ export default function Admin({ onLogout }) {
                               </button>
                             )}
                             <button
-                              onClick={() => handleExtend(c.id)}
+                              onClick={() => handleExtend(c.id, c.card_key)}
                               title="延长到期时间"
                               className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[11px] font-bold transition"
                             >
                               续期
                             </button>
                             <button
-                              onClick={() => handleDeleteCard(c.id)}
+                              onClick={() => handleDeleteCard(c.id, c.card_key)}
                               title="删除卡密"
                               className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[11px] font-bold transition"
                             >
@@ -594,7 +656,7 @@ export default function Admin({ onLogout }) {
                           编辑
                         </button>
                         <button
-                          onClick={() => handleDeletePackage(pkg.id)}
+                          onClick={() => handleDeletePackage(pkg.id, pkg.name)}
                           className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-lg transition"
                         >
                           删除
@@ -1133,6 +1195,8 @@ export default function Admin({ onLogout }) {
           </div>
         </div>
       )}
+
+      <ActionModal {...actionModal} onClose={() => setActionModal(null)} />
     </div>
   );
 }
