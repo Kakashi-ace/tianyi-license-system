@@ -99,4 +99,57 @@ router.post(['/heartbeat', '/ping'], async (req, res) => {
   });
 });
 
+router.get('/version/check', async (req, res) => {
+  try {
+    const clientBuild = parseInt(req.query.build || '0', 10);
+    const clientVersion = req.query.version || '1.0.0';
+    const channel = req.query.channel || 'stable';
+
+    const [rows] = await pool.query(
+      'SELECT id, version, build_number, channel, title, changelog, download_url, file_sha256, file_size, force_update, is_active FROM t_app_version WHERE is_active = 1 AND channel = ? ORDER BY build_number DESC LIMIT 1',
+      [channel]
+    );
+
+    if (rows.length === 0) {
+      return res.json({
+        success: true,
+        has_update: false,
+        current_version: clientVersion,
+        latest_version: clientVersion
+      });
+    }
+
+    const latest = rows[0];
+    const hasUpdate = latest.build_number > clientBuild;
+
+    res.json({
+      success: true,
+      has_update: hasUpdate,
+      current_version: clientVersion,
+      latest_version: latest.version,
+      build_number: latest.build_number,
+      title: latest.title,
+      changelog: latest.changelog,
+      download_url: latest.download_url,
+      file_sha256: latest.file_sha256,
+      file_size: latest.file_size,
+      force_update: Boolean(latest.force_update)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '版本检查异常: ' + err.message });
+  }
+});
+
+router.post('/version/stat', async (req, res) => {
+  try {
+    const versionId = req.body.version_id;
+    if (versionId) {
+      await pool.query('UPDATE t_app_version SET download_count = download_count + 1 WHERE id = ?', [versionId]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

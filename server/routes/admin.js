@@ -613,4 +613,76 @@ router.get('/blacklist', authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get('/versions', authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM t_app_version ORDER BY build_number DESC');
+    res.json({ success: true, list: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '获取版本列表失败: ' + err.message });
+  }
+});
+
+router.post('/versions/publish', authenticateAdmin, async (req, res) => {
+  try {
+    const { version, build_number, title, changelog, download_url, file_sha256, file_size, force_update, channel } = req.body;
+    if (!version || !build_number || !download_url || !title) {
+      return res.status(400).json({ success: false, message: '版本号、构建号、更新标题及下载链接为必填项' });
+    }
+
+    await pool.query('UPDATE t_app_version SET is_active = 0 WHERE channel = ?', [channel || 'stable']);
+
+    const [result] = await pool.query(
+      `INSERT INTO t_app_version 
+        (version, build_number, channel, title, changelog, download_url, file_sha256, file_size, force_update, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      [
+        version.trim(),
+        parseInt(build_number, 10),
+        channel || 'stable',
+        title.trim(),
+        changelog ? changelog.trim() : '',
+        download_url.trim(),
+        file_sha256 ? file_sha256.trim() : null,
+        parseInt(file_size || '0', 10),
+        force_update ? 1 : 0
+      ]
+    );
+
+    res.json({
+      success: true,
+      id: result.insertId,
+      message: `版本 ${version.trim()} (Build ${build_number}) 发布成功，全网客户端已即时生效！`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '发布新版本异常: ' + err.message });
+  }
+});
+
+router.post('/versions/:id/toggle', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+    if (is_active) {
+      const [curr] = await pool.query('SELECT channel FROM t_app_version WHERE id = ?', [id]);
+      if (curr.length > 0) {
+        await pool.query('UPDATE t_app_version SET is_active = 0 WHERE channel = ?', [curr[0].channel]);
+      }
+    }
+    await pool.query('UPDATE t_app_version SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, id]);
+    res.json({ success: true, message: '版本推送状态更新成功' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '更新版本状态失败: ' + err.message });
+  }
+});
+
+router.delete('/versions/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM t_app_version WHERE id = ?', [id]);
+    res.json({ success: true, message: '版本记录已删除' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '删除版本记录失败: ' + err.message });
+  }
+});
+
 module.exports = router;

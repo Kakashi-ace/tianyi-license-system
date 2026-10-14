@@ -22,9 +22,11 @@ import {
   Image as ImageIcon,
   X,
   CheckCheck,
-  Users
+  Users,
+  Rocket
 } from 'lucide-react';
 import UserMonitor from '../components/UserMonitor';
+import VersionManager from '../components/VersionManager';
 import ActionModal from '../components/ActionModal';
 import {
   fetchDashboard,
@@ -383,6 +385,15 @@ export default function Admin({ onLogout }) {
                 {feedbacks.filter(f => f.status === 'PENDING').length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setTab('versions')}
+            className={`w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-3 transition ${
+              tab === 'versions' ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <Rocket className="w-4 h-4 text-blue-600" />
+            <span>版本发布管理</span>
           </button>
         </aside>
 
@@ -946,6 +957,10 @@ export default function Admin({ onLogout }) {
                 </div>
               )}
             </div>
+          )}
+
+          {tab === 'versions' && (
+            <VersionManager onShowActionModal={setActionModal} />
           )}
         </main>
       </div>
